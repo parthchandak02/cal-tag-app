@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, FlatList, Image } from 'react-native';
 
 import ParallaxScrollView from '../../components/ParallaxScrollView';
