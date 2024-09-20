@@ -15,13 +15,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.parthchandak.caltagapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.parthchandak.caltagapp"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
