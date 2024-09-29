@@ -5,7 +5,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "your-app-scheme",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -26,7 +27,21 @@
       "package": "com.parthchandak.caltagapp"
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
-    }
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "fonts": [
+      {
+        "asset": "assets/fonts/Montserrat-VariableFont_wght.ttf",
+        "family": "Montserrat"
+      },
+      {
+        "asset": "assets/fonts/Montserrat-Italic-VariableFont_wght.ttf",
+        "family": "Montserrat-Italic"
+      }
+    ]
   }
 }

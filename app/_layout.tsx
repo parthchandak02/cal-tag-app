@@ -1,37 +1,66 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationLightTheme } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { Stack, SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Provider as PaperProvider, MD3DarkTheme, MD3LightTheme, adaptNavigationTheme } from 'react-native-paper';
+import { useColorScheme } from 'react-native';
+import { useTheme } from '@/hooks/useTheme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+const { DarkTheme, LightTheme } = adaptNavigationTheme({
+  reactNavigationDark: NavigationDarkTheme,
+  reactNavigationLight: NavigationLightTheme,
+});
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const theme = useTheme();
+  const [fontsLoaded] = useFonts({
+    'Montserrat': require('../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-Italic': require('../assets/fonts/Montserrat-Italic-VariableFont_wght.ttf'),
   });
 
   useEffect(() => {
-    if (loaded) {
+    if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [fontsLoaded]);
 
-  if (!loaded) {
+  if (!fontsLoaded) {
     return null;
   }
 
+  const paperTheme = {
+    ...MD3DarkTheme,
+    colors: theme.colors,
+    fonts: {
+      ...MD3DarkTheme.fonts,
+      regular: {
+        fontFamily: 'Montserrat, sans-serif',
+        fontWeight: '400',
+      },
+      medium: {
+        fontFamily: 'Montserrat, sans-serif',
+        fontWeight: '500',
+      },
+      light: {
+        fontFamily: 'Montserrat, sans-serif',
+        fontWeight: '300',
+      },
+      thin: {
+        fontFamily: 'Montserrat, sans-serif',
+        fontWeight: '100',
+      },
+    },
+  };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <PaperProvider theme={paperTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
-    </ThemeProvider>
+    </PaperProvider>
   );
 }
