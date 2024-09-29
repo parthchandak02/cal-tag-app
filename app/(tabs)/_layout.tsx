@@ -1,6 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
+import { BlurView } from 'expo-blur';
+import { Platform, View } from 'react-native';
 
 export default function TabLayout() {
   const theme = useTheme();
@@ -9,28 +11,47 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: 'transparent',
-          borderTopColor: 'transparent',
-          elevation: 0, // Remove shadow on Android
-          shadowOpacity: 0, // Remove shadow on iOS
           position: 'absolute',
           bottom: 0,
-          height: 80, // Increase the overall height of the tab bar
-          paddingBottom: 10, // Add some padding at the bottom for devices with home indicators
+          left: 0,
+          right: 0,
+          height: 80,
+          paddingBottom: 10,
+          borderTopWidth: 0,
+          elevation: 0,
+          ...Platform.select({
+            ios: {
+              backgroundColor: 'transparent',
+            },
+            android: {
+              backgroundColor: `${theme.colors.background}CC`, // Add some opacity
+            },
+          }),
         },
+        tabBarBackground: () =>
+          Platform.OS === 'ios' ? (
+            <BlurView
+              tint={theme.colors.background === '#FFFFFF' ? 'light' : 'dark'}
+              intensity={100}
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <View style={{ flex: 1, backgroundColor: `${theme.colors.background}CC` }} />
+          ),
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarLabelStyle: {
-          ...theme.fonts.regular,
-          fontSize: 14, // Increase font size
-          marginBottom: 8, // Increase bottom margin
+          fontFamily: theme.fonts.regular.fontFamily,
+          fontWeight: theme.fonts.regular.fontWeight,
+          fontSize: 14,
+          marginBottom: 8,
         },
         headerShown: false,
         tabBarItemStyle: {
-          paddingVertical: 8, // Adjust vertical padding
+          paddingVertical: 8,
         },
         tabBarIconStyle: {
-          marginBottom: 4, // Adjust bottom margin for icon
+          marginBottom: 4,
         },
       }}>
       <Tabs.Screen
@@ -38,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: 'Events',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome size={28} name="calendar" color={color} /> // Increase icon size
+            <FontAwesome size={28} name="calendar" color={color} />
           ),
         }}
       />
@@ -47,7 +68,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome size={28} name="cog" color={color} /> // Increase icon size
+            <FontAwesome size={28} name="cog" color={color} />
           ),
         }}
       />

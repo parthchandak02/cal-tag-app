@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "your-app-scheme",
+    "scheme": "cal-tag-app",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -17,14 +17,30 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.parthchandak.caltagapp"
+      "bundleIdentifier": "cal.tag.app",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.1042658409077-kd6jlm51ge6r30jmnjlctipur8guvq5b"
+        }
+      },
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "This app requires access to your calendar to display events.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.1042658409077-kd6jlm51ge6r30jmnjlctipur8guvq5b"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.parthchandak.caltagapp"
+      "package": "com.parthchandak.caltagapp",
+      "permissions": ["READ_CALENDAR"]
     },
     "web": {
       "favicon": "./assets/images/favicon.png",

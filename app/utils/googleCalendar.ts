@@ -1,93 +1,62 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { IOS_CLIENT_ID, WEB_CLIENT_ID } from '@env';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
-let isGoogleSignInConfigured = false;
-
-// Mock data for development
-const mockEvents = [
-  {
-    id: '1',
-    summary: 'Mock Event 1',
-    start: { dateTime: new Date().toISOString() },
-    end: { dateTime: new Date(Date.now() + 3600000).toISOString() },
-  },
-  {
-    id: '2',
-    summary: 'Mock Event 2',
-    start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
-    end: { dateTime: new Date(Date.now() + 90000000).toISOString() },
-  },
+const scopes = [
+  'openid',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/calendar.readonly'
 ];
 
-export function configureGoogleSignIn() {
-  if (!isGoogleSignInConfigured) {
-    if (!isExpoGo) {
-      // Actual configuration code here
-      // This won't run in Expo Go, so it's safe to keep
-      // GoogleSignin.configure({
-      //   scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
-      //   iosClientId: Platform.OS === 'ios' ? IOS_CLIENT_ID : undefined,
-      //   webClientId: WEB_CLIENT_ID,
-      // });
-    }
-    isGoogleSignInConfigured = true;
-  }
-}
+export const useGoogleAuth = () => {
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: WEB_CLIENT_ID,
+    iosClientId: IOS_CLIENT_ID,
+    androidClientId: WEB_CLIENT_ID, // Use WEB_CLIENT_ID for Android as well
+    scopes: scopes,
+    // The useProxy option is not needed, so we've removed it
+  });
+
+  return { request, response, promptAsync };
+};
 
 export async function signIn() {
-  if (!isGoogleSignInConfigured) {
-    configureGoogleSignIn();
-  }
-
+  // Remove the configureGoogleSignIn call as it's not defined
   if (isExpoGo) {
     // Mock sign-in for Expo Go
     const mockUser = { id: 'mock-user-id', name: 'Mock User', email: 'mock@example.com' };
     await AsyncStorage.setItem('user', JSON.stringify(mockUser));
     return mockUser;
   } else {
-    // Actual sign-in code here
-    // This won't run in Expo Go, so it's safe to keep
-    // try {
-    //   await GoogleSignin.hasPlayServices();
-    //   const userInfo = await GoogleSignin.signIn();
-    //   await AsyncStorage.setItem('user', JSON.stringify(userInfo));
-    //   return userInfo;
-    // } catch (error) {
-    //   console.error("Error during sign in:", error);
-    //   return null;
-    // }
+    // Implement actual sign-in logic here
+    // This is where you'd use the Google Sign-In SDK
+    throw new Error("Actual sign-in not implemented");
   }
 }
 
-export async function fetchEvents() {
-  if (!isGoogleSignInConfigured) {
-    configureGoogleSignIn();
+export async function fetchEventsWithPagination(accessToken: string, pageToken?: string) {
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${new Date().toISOString()}&timeMax=${sevenDaysFromNow.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10${pageToken ? `&pageToken=${pageToken}` : ''}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch events');
   }
 
-  if (isExpoGo) {
-    // Return mock events for Expo Go
-    return mockEvents;
-  } else {
-    // Actual event fetching code here
-    // This won't run in Expo Go, so it's safe to keep
-    // try {
-    //   const token = await GoogleSignin.getTokens();
-    //   const response = await fetch(
-    //     `https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true&timeMin=${new Date().toISOString()}`,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${token.accessToken}`,
-    //       },
-    //     }
-    //   );
-    //   const result = await response.json();
-    //   return result.items;
-    // } catch (error) {
-    //   console.error("Error fetching events:", error);
-    //   return [];
-    // }
-  }
+  return response.json();
 }

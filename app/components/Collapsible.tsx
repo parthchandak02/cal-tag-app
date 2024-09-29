@@ -1,11 +1,11 @@
 import React, { PropsWithChildren, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View, Text, useColorScheme } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '../constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
+export function Collapsible({ children, title }: PropsWithChildren<{ title: string }>) {
   const [isOpen, setIsOpen] = useState(false);
-  const theme = useColorScheme() ?? 'light';
+  const theme = useColorScheme();
 
   return (
     <View>
