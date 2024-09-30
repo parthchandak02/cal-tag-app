@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Button } from 'react-native';
-import { Surface, Text, Divider } from 'react-native-paper';
+import { View, StyleSheet, FlatList, SafeAreaView, RefreshControl } from 'react-native';
+import { Surface, Text, Button, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useTheme } from '@/hooks/useTheme';
 import { EventCard } from '@/components/EventCard';
 import { useGoogleAuth, fetchEventsWithPagination } from '@/utils/googleCalendar';
@@ -93,32 +93,45 @@ export default function EventsScreen() {
   };
 
   return (
-    <Surface style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {response?.type !== 'success' ? (
-        <Button title="Connect Google Calendar" onPress={() => promptAsync()} />
-      ) : (
-        <FlatList
-          data={events}
-          renderItem={({ item }) => (
-            <>
-              {renderSectionHeader({ section: item })}
-              {item.data.map((event) => (
-                <EventCard key={`${event.id}-${event.start.dateTime}`} event={event} />
-              ))}
-            </>
-          )}
-          keyExtractor={(item, index) => `${item.title}-${index}`}
-          contentContainerStyle={styles.content}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={
-            loading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-            ) : null
-          }
-        />
-      )}
-    </Surface>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Surface style={styles.content}>
+        {response?.type !== 'success' ? (
+          <View style={styles.centerContainer}>
+            <Button
+              mode="contained"
+              onPress={() => promptAsync()}
+              style={styles.button}
+              labelStyle={styles.buttonLabel}
+              color={theme.colors.primary}
+            >
+              Connect Google Calendar
+            </Button>
+          </View>
+        ) : (
+          <FlatList
+            data={events}
+            renderItem={({ item }) => (
+              <>
+                {renderSectionHeader({ section: item })}
+                {item.data.map((event) => (
+                  <EventCard key={`${event.id}-${event.start.dateTime}`} event={event} />
+                ))}
+              </>
+            )}
+            keyExtractor={(item, index) => `${item.title}-${index}`}
+            contentContainerStyle={styles.content}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.1}
+            ListFooterComponent={
+              loading ? (
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              ) : null
+            }
+          />
+        )}
+      </Surface>
+      {/* ... existing Snackbar code ... */}
+    </SafeAreaView>
   );
 }
 
@@ -127,8 +140,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 80,
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sectionHeader: {
     padding: 8,
@@ -137,6 +154,19 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  buttonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
