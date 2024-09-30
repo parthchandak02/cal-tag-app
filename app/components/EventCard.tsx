@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'r
 import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import RenderHtml from 'react-native-render-html';
+import { CountdownTimer } from './CountdownTimer';
 
 interface EventCardProps {
   event: {
@@ -21,13 +22,21 @@ export function EventCard({ event }: EventCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
     });
   };
+
+  const extractAlarmTags = (description: string) => {
+    const alarmRegex = /alarm(\d+)/g;
+    const matches = description.match(alarmRegex);
+    return matches ? matches.map(match => ({
+      label: match,
+      minutes: parseInt(match.replace('alarm', ''), 10)
+    })) : [];
+  };
+
+  const alarmTags = event.description ? extractAlarmTags(event.description) : [];
 
   const renderDescription = () => {
     if (!event.description) return null;
@@ -39,7 +48,7 @@ export function EventCard({ event }: EventCardProps) {
     return (
       <>
         <RenderHtml
-          contentWidth={width - 32} // Adjust based on your padding
+          contentWidth={width - 32}
           source={source}
           tagsStyles={{
             body: { color: theme.colors.textSecondary, fontSize: 14 },
@@ -59,10 +68,24 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>{event.summary}</Text>
-      <Text style={[styles.time, { color: theme.colors.textSecondary }]}>
-        {formatDate(event.start.dateTime)} - {formatDate(event.end.dateTime)}
-      </Text>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{event.summary}</Text>
+        <View style={styles.timeContainer}>
+          <Text style={[styles.time, { color: theme.colors.textSecondary }]}>
+            {formatDate(event.start.dateTime)}
+          </Text>
+          <Text style={[styles.time, { color: theme.colors.textSecondary }]}>
+            {formatDate(event.end.dateTime)}
+          </Text>
+        </View>
+      </View>
+      {alarmTags.map((tag, index) => (
+        <CountdownTimer
+          key={index}
+          targetDate={new Date(new Date(event.start.dateTime).getTime() - tag.minutes * 60000)}
+          label={tag.label}
+        />
+      ))}
       {renderDescription()}
     </View>
   );
@@ -79,14 +102,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  timeContainer: {
+    alignItems: 'flex-end',
   },
   time: {
     fontSize: 14,
-    marginBottom: 8,
   },
   expandButton: {
     alignSelf: 'center',

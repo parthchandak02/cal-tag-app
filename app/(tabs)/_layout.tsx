@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { BlurView } from 'expo-blur';
-import { Platform, View } from 'react-native';
+import { Platform, View, TextStyle } from 'react-native';
 
 export default function TabLayout() {
   const theme = useTheme();
@@ -42,7 +42,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarLabelStyle: {
           fontFamily: theme.fonts.regular.fontFamily,
-          fontWeight: theme.fonts.regular.fontWeight,
+          fontWeight: theme.fonts.regular.fontWeight as TextStyle['fontWeight'],
           fontSize: 14,
           marginBottom: 8,
         },
