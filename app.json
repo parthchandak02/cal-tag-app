@@ -19,6 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cal.tag.app",
+      "buildNumber": "1",
       "config": {
         "googleSignIn": {
           "reservedClientId": "com.googleusercontent.apps.1042658409077-kd6jlm51ge6r30jmnjlctipur8guvq5b"
@@ -29,7 +30,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.1042658409077-kd6jlm51ge6r30jmnjlctipur8guvq5b"
+              "cal-tag-app"
             ]
           }
         ]
@@ -41,13 +42,20 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.parthchandak.caltagapp",
-      "permissions": ["READ_CALENDAR"]
+      "permissions": ["READ_CALENDAR"],
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
+      ],
       "expo-router",
       [
         "expo-notifications",
@@ -67,6 +75,12 @@
         "asset": "assets/fonts/Montserrat-Italic-VariableFont_wght.ttf",
         "family": "Montserrat-Italic"
       }
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9e7f73a2-94ba-44a3-8ef7-0bf1746455f4"
+      },
+      "oneSignalAppId": "0db95f41-15db-4492-a60c-e8935689bd9e"
+    }
   }
 }

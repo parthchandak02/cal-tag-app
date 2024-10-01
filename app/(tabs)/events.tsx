@@ -4,6 +4,10 @@ import { Surface, Text, Button, ActivityIndicator, Snackbar } from 'react-native
 import { useTheme } from '@/hooks/useTheme';
 import { EventCard } from '@/components/EventCard';
 import { useGoogleAuth, fetchEventsWithPagination, CalendarEvent } from '@/utils/googleCalendar';
+import { NotificationService, EventNotification } from '@/utils/NotificationService';
+import CountdownTimer from '@/components/CountdownTimer';
+import { scheduleNotification } from '@/utils/NotificationManager';
+import { setNotificationHandler } from '@/utils/NotificationManager';
 
 interface GroupedEvents {
   title: string;
@@ -23,6 +27,7 @@ export default function EventsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [snoozedAlarms, setSnoozedAlarms] = useState<EventNotification[]>([]);
 
   const loadEvents = async (pageToken: string | null = null) => {
     if (response?.type !== 'success' || !response.authentication) return;
@@ -41,6 +46,9 @@ export default function EventsScreen() {
         const uniqueEvents = allEvents.filter((event, index, self) =>
           index === self.findIndex((t) => t.id === event.id)
         );
+
+        // Schedule notifications for new events
+        newEvents.forEach(scheduleEventNotifications);
 
         return groupEventsByDate(uniqueEvents);
       });
@@ -92,6 +100,65 @@ export default function EventsScreen() {
     }
   }, [response]);
 
+  useEffect(() => {
+    NotificationService.handleNotificationOpened((notification) => {
+      const data = notification.notification.additionalData;
+      if (data.eventId) {
+        if (notification.action.actionId === 'snooze') {
+          handleSnooze(data.eventId, data.eventName);
+        } else if (notification.action.actionId === 'stop') {
+          handleStopAlarm(data.eventId);
+        }
+      }
+    });
+
+    NotificationService.handleNotificationReceived((notification) => {
+      // Handle in-app notification if needed
+    });
+
+    setNotificationHandler((notification) => {
+      const data = notification.notification.additionalData;
+      if (data.eventId) {
+        if (notification.action.actionId === 'snooze') {
+          handleSnooze(data.eventId, data.eventName);
+        } else if (notification.action.actionId === 'stop') {
+          handleStopAlarm(data.eventId);
+        }
+      }
+    });
+  }, []);
+
+  const scheduleEventNotifications = (event: CalendarEvent) => {
+    const alarmTags = ['alarm3', 'alarm5']; // Add more tags as needed
+    alarmTags.forEach(tag => {
+      if (event[tag]) {
+        const alarmTime = new Date(event.start.dateTime);
+        alarmTime.setMinutes(alarmTime.getMinutes() - parseInt(tag.replace('alarm', '')));
+
+        NotificationService.scheduleNotification({
+          eventId: event.id,
+          eventName: event.summary,
+          alarmTime: alarmTime,
+        });
+      }
+    });
+  };
+
+  const handleSnooze = (eventId: string, eventName: string) => {
+    const snoozeTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+    const snoozedAlarm: EventNotification = {
+      eventId,
+      eventName,
+      alarmTime: snoozeTime,
+    };
+    setSnoozedAlarms(prev => [...prev, snoozedAlarm]);
+    NotificationService.scheduleNotification(snoozedAlarm);
+  };
+
+  const handleStopAlarm = (eventId: string) => {
+    setSnoozedAlarms(prev => prev.filter(alarm => alarm.eventId !== eventId));
+  };
+
   const handleLoadMore = () => {
     if (nextPageToken) {
       loadEvents(nextPageToken);
@@ -108,9 +175,33 @@ export default function EventsScreen() {
     return <EventCard key={event.id} event={event} alarmTags={alarmTags} />;
   };
 
+  // Render snoozed alarms
+  const renderSnoozedAlarms = () => (
+    <View style={styles.snoozedAlarmsContainer}>
+      {snoozedAlarms.map(alarm => (
+        <View key={alarm.eventId} style={styles.snoozedAlarmItem}>
+          <Text>{alarm.eventName}</Text>
+          <CountdownTimer
+            targetDate={alarm.alarmTime}
+            onComplete={() => handleSnooze(alarm.eventId, alarm.eventName)}
+          />
+        </View>
+      ))}
+    </View>
+  );
+
+  const handleAlarmTrigger = useCallback((event: CalendarEvent, alarmTag: AlarmTag) => {
+    scheduleNotification(
+      'Event Alarm',
+      `${event.summary} is starting in ${alarmTag.minutes} minutes!`,
+      new Date(event.start.dateTime)
+    );
+  }, []);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Surface style={styles.content}>
+        {renderSnoozedAlarms()}
         {response?.type !== 'success' ? (
           <View style={styles.centerContainer}>
             <Button
@@ -187,5 +278,11 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  snoozedAlarmsContainer: {
+    // Add styles for snoozed alarms container
+  },
+  snoozedAlarmItem: {
+    // Add styles for snoozed alarm item
   },
 });

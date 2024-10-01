@@ -1,44 +1,52 @@
-import * as Notifications from 'expo-notifications';
+import OneSignal from 'react-native-onesignal';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { ONESIGNAL_APP_ID } from '@env';
 
-export const NotificationManager = {
-  initialize: async () => {
-    if (Platform.OS !== 'web') {
-      await Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
-    }
-  },
+export async function initializeNotifications() {
+  OneSignal.setAppId(ONESIGNAL_APP_ID);
 
-  showNotification: async ({ title, body, data }: { title: string; body: string; data?: any }) => {
-    if (Platform.OS === 'web') {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          new Notification(title, { body });
-        }
-      }
-    } else {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data,
-          sound: true,
-        },
-        trigger: null,
-      });
-    }
-  },
+  if (Platform.OS === 'ios') {
+    OneSignal.promptForPushNotificationsWithUserResponse();
+  }
 
-  addNotificationResponseReceivedListener: (callback: (response: Notifications.NotificationResponse) => void) => {
-    if (Platform.OS !== 'web') {
-      return Notifications.addNotificationResponseReceivedListener(callback);
-    }
-    return { remove: () => {} };
-  },
-};
+  OneSignal.setNotificationOpenedHandler((notification) => {
+    console.log("OneSignal: notification opened:", notification);
+    // Handle the notification here (e.g., navigate to a specific screen)
+  });
+
+  OneSignal.setNotificationWillShowInForegroundHandler((notificationReceivedEvent) => {
+    console.log("OneSignal: notification will show in foreground:", notificationReceivedEvent);
+    const notification = notificationReceivedEvent.getNotification();
+    // Complete with null means don't show a notification.
+    notificationReceivedEvent.complete(notification);
+  });
+}
+
+export async function scheduleNotification(title: string, body: string, triggerTime: Date) {
+  const currentTime = new Date();
+  if (triggerTime > currentTime) {
+    const secondsUntilTrigger = Math.floor((triggerTime.getTime() - currentTime.getTime()) / 1000);
+
+    await OneSignal.postNotification({
+      contents: {
+        en: body,
+      },
+      heading: {
+        en: title,
+      },
+      send_after: triggerTime.toISOString(),
+      data: {
+        customKey: 'customValue',
+      },
+      buttons: [
+        { id: 'snooze', text: 'Snooze 5 min' },
+        { id: 'stop', text: 'Stop Alarm' },
+      ],
+    });
+  }
+}
+
+export function setNotificationHandler(handler: (notification: any) => void) {
+  OneSignal.setNotificationOpenedHandler(handler);
+}

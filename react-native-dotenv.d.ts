@@ -11,4 +11,5 @@ declare module '@env' {
   export const REDIRECT_URI: string;
   export const IOS_BUNDLE_ID: string;
   export const IOS_URL_SCHEME: string;
+  export const ONESIGNAL_APP_ID: string;
 }
