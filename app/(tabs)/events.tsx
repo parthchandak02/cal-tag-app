@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, SafeAreaView, RefreshControl } from 'react-native';
 import { Surface, Text, Button, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useTheme } from '@/hooks/useTheme';
 import { EventCard } from '@/components/EventCard';
-import { useGoogleAuth, fetchEventsWithPagination } from '@/utils/googleCalendar';
-
-interface Event {
-  id: string;
-  summary: string;
-  description?: string;
-  start: { dateTime: string };
-  end: { dateTime: string };
-}
+import { useGoogleAuth, fetchEventsWithPagination, CalendarEvent } from '@/utils/googleCalendar';
 
 interface GroupedEvents {
   title: string;
-  data: Event[];
+  data: CalendarEvent[];
+}
+
+interface AlarmTag {
+  minutes: number;
+  targetDate: Date;
 }
 
 export default function EventsScreen() {
@@ -23,7 +20,9 @@ export default function EventsScreen() {
   const { promptAsync, response } = useGoogleAuth();
   const [events, setEvents] = useState<GroupedEvents[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadEvents = async (pageToken: string | null = null) => {
     if (response?.type !== 'success' || !response.authentication) return;
@@ -49,13 +48,14 @@ export default function EventsScreen() {
       setNextPageToken(result.nextPageToken || null);
     } catch (error) {
       console.error('Error fetching events:', error);
+      setError('Failed to load events. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const groupEventsByDate = (events: Event[]): GroupedEvents[] => {
-    const grouped = events.reduce((acc: { [key: string]: Event[] }, event) => {
+  const groupEventsByDate = (events: CalendarEvent[]): GroupedEvents[] => {
+    const grouped = events.reduce((acc: { [key: string]: CalendarEvent[] }, event) => {
       const date = new Date(event.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
       if (!acc[date]) {
         acc[date] = [];
@@ -65,11 +65,25 @@ export default function EventsScreen() {
     }, {});
 
     return Object.entries(grouped)
-      .map(([date, events]) => ({
+      .map(([date, events]: [string, CalendarEvent[]]) => ({
         title: date,
         data: events.sort((a, b) => new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime())
       }))
       .sort((a, b) => new Date(a.data[0].start.dateTime).getTime() - new Date(b.data[0].start.dateTime).getTime());
+  };
+
+  const parseAlarmTags = (description: string, startDateTime: string): AlarmTag[] => {
+    const alarmRegex = /alarm(\d+)/g;
+    const matches = description.match(alarmRegex);
+    const startDate = new Date(startDateTime);
+
+    if (!matches) return [];
+
+    return matches.map(match => {
+      const minutes = parseInt(match.replace('alarm', ''), 10);
+      const targetDate = new Date(startDate.getTime() - minutes * 60000);
+      return { minutes, targetDate };
+    }).sort((a, b) => b.minutes - a.minutes);
   };
 
   useEffect(() => {
@@ -78,18 +92,20 @@ export default function EventsScreen() {
     }
   }, [response]);
 
-  const renderItem = ({ item }: { item: Event }) => <EventCard event={item} />;
-
-  const renderSectionHeader = ({ section: { title } }: { section: GroupedEvents }) => (
-    <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.sectionHeaderText, { color: theme.colors.text }]}>{title}</Text>
-    </View>
-  );
-
   const handleLoadMore = () => {
     if (nextPageToken) {
       loadEvents(nextPageToken);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadEvents().finally(() => setRefreshing(false));
+  };
+
+  const renderEventCard = (event: CalendarEvent) => {
+    const alarmTags = parseAlarmTags(event.description || '', event.start.dateTime);
+    return <EventCard key={event.id} event={event} alarmTags={alarmTags} />;
   };
 
   return (
@@ -112,25 +128,34 @@ export default function EventsScreen() {
             data={events}
             renderItem={({ item }) => (
               <>
-                {renderSectionHeader({ section: item })}
-                {item.data.map((event) => (
-                  <EventCard key={`${event.id}-${event.start.dateTime}`} event={event} />
-                ))}
+                <Text style={[styles.sectionHeaderText, { color: theme.colors.text }]}>{item.title}</Text>
+                {item.data.map((event) => renderEventCard(event))}
               </>
             )}
             keyExtractor={(item, index) => `${item.title}-${index}`}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={styles.listContent}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.1}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
             ListFooterComponent={
               loading ? (
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <ActivityIndicator animating={true} color={theme.colors.primary} />
               ) : null
             }
           />
         )}
       </Surface>
-      {/* ... existing Snackbar code ... */}
+      <Snackbar
+        visible={!!error}
+        onDismiss={() => setError(null)}
+        action={{
+          label: 'Retry',
+          onPress: () => loadEvents(),
+        }}>
+        {error}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -147,19 +172,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sectionHeader: {
-    padding: 8,
-    marginBottom: 8,
-    borderRadius: 4,
-  },
   sectionHeaderText: {
     fontSize: 18,
     fontWeight: 'bold',
+    padding: 16,
   },
-  buttonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  listContent: {
+    paddingBottom: 16,
   },
   button: {
     paddingHorizontal: 16,

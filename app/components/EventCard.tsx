@@ -1,127 +1,110 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, IconButton } from 'react-native-paper';
 import { useTheme } from '@/hooks/useTheme';
-import { Ionicons } from '@expo/vector-icons';
-import RenderHtml from 'react-native-render-html';
 import { CountdownTimer } from './CountdownTimer';
+import HTML from 'react-native-render-html';
 
 interface EventCardProps {
-  event: {
-    summary: string;
-    description?: string;
-    start: { dateTime: string };
-    end: { dateTime: string };
-  };
+  event: CalendarEvent;
+  alarmTags: AlarmTag[];
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, alarmTags }: EventCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const { width } = useWindowDimensions();
 
-  const formatDate = (dateString: string) => {
+  const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-    });
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const extractAlarmTags = (description: string) => {
-    const alarmRegex = /alarm(\d+)/g;
-    const matches = description.match(alarmRegex);
-    return matches ? matches.map(match => ({
-      label: match,
-      minutes: parseInt(match.replace('alarm', ''), 10)
-    })) : [];
-  };
-
-  const alarmTags = event.description ? extractAlarmTags(event.description) : [];
-
-  const renderDescription = () => {
-    if (!event.description) return null;
-
-    const source = {
-      html: isExpanded ? event.description : `${event.description.slice(0, 100)}...`
-    };
-
-    return (
-      <>
-        <RenderHtml
-          contentWidth={width - 32}
-          source={source}
-          tagsStyles={{
-            body: { color: theme.colors.textSecondary, fontSize: 14 },
-            a: { color: theme.colors.primary },
-          }}
-        />
-        <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={styles.expandButton}>
-          <Ionicons
-            name={isExpanded ? 'chevron-up-outline' : 'chevron-down-outline'}
-            size={24}
-            color={theme.colors.primary}
-          />
-        </TouchableOpacity>
-      </>
-    );
-  };
+  const timeRange = `${formatTime(event.start.dateTime)} - ${formatTime(event.end.dateTime)}`;
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>{event.summary}</Text>
-        <View style={styles.timeContainer}>
-          <Text style={[styles.time, { color: theme.colors.textSecondary }]}>
-            {formatDate(event.start.dateTime)}
-          </Text>
-          <Text style={[styles.time, { color: theme.colors.textSecondary }]}>
-            {formatDate(event.end.dateTime)}
-          </Text>
+    <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={2} ellipsizeMode="tail">
+              {event.summary}
+            </Text>
+          </View>
+          <View style={styles.timeContainer}>
+            <Text style={[styles.time, { color: theme.colors.textSecondary }]}>{timeRange}</Text>
+            <IconButton
+              icon={expanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              onPress={() => setExpanded(!expanded)}
+              color={theme.colors.primary}
+            />
+          </View>
         </View>
+      </TouchableOpacity>
+
+      <View style={styles.countdownContainer}>
+        {alarmTags.map((tag, index) => (
+          <CountdownTimer
+            key={index}
+            targetDate={tag.targetDate}
+            label={`Alarm ${tag.minutes} min before`}
+            onFinish={() => {}}  // Pass an empty function as onFinish
+          />
+        ))}
       </View>
-      {alarmTags.map((tag, index) => (
-        <CountdownTimer
-          key={index}
-          targetDate={new Date(new Date(event.start.dateTime).getTime() - tag.minutes * 60000)}
-          label={tag.label}
-        />
-      ))}
-      {renderDescription()}
+
+      {expanded && event.description && (
+        <View style={styles.description}>
+          <HTML
+            source={{ html: event.description }}
+            contentWidth={300}
+            baseStyle={{
+              color: theme.colors.text,
+              fontSize: 14,
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 8,
-    padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    padding: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  titleContainer: {
     flex: 1,
     marginRight: 8,
   },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   timeContainer: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   time: {
     fontSize: 14,
+    marginRight: 8,
   },
-  expandButton: {
-    alignSelf: 'center',
-    marginTop: 8,
+  countdownContainer: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  description: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
 });

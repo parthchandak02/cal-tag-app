@@ -1,6 +1,7 @@
 node_modules/
 .expo/
 dist/
+
 package-lock.json
 yarn.lock
 npm-debug.*
@@ -26,3 +27,5 @@ web-build/
 ios/
 android/
 .env
+
+project_info.txt

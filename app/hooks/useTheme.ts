@@ -7,21 +7,23 @@ export const useTheme = () => {
     dark: {
       background: '#121212',
       surface: '#1E1E1E',
+      card: '#2C2C2C', // New color for card background in dark mode
       primary: '#BB86FC',
       secondary: '#03DAC6',
       text: '#FFFFFF',
       textSecondary: '#B3B3B3',
-      border: '#2C2C2C',
+      border: '#3A3A3A', // New color for card borders in dark mode
       highlight: '#2C2C2C',
     },
     light: {
       background: '#FFFFFF',
       surface: '#F5F5F5',
+      card: '#FFFFFF', // New color for card background in light mode
       primary: '#6200EE',
       secondary: '#03DAC6',
       text: '#000000',
       textSecondary: '#666666',
-      border: '#E0E0E0',
+      border: '#E0E0E0', // New color for card borders in light mode
       highlight: '#E0E0E0',
     },
   };
