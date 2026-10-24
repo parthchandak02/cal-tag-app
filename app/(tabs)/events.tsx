@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { EventCard } from '@/components/EventCard';
 import { useGoogleAuth, fetchEventsWithPagination, CalendarEvent } from '@/utils/googleCalendar';
 import { NotificationService, EventNotification } from '@/utils/NotificationService';
-import CountdownTimer from '@/components/CountdownTimer';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { scheduleNotification } from '@/utils/NotificationManager';
 import { setNotificationHandler } from '@/utils/NotificationManager';
 
@@ -129,18 +129,14 @@ export default function EventsScreen() {
   }, []);
 
   const scheduleEventNotifications = (event: CalendarEvent) => {
-    const alarmTags = ['alarm3', 'alarm5']; // Add more tags as needed
+    // Tags like alarm5 live in the event description, same as the countdowns
+    const alarmTags = parseAlarmTags(event.description || '', event.start.dateTime);
     alarmTags.forEach(tag => {
-      if (event[tag]) {
-        const alarmTime = new Date(event.start.dateTime);
-        alarmTime.setMinutes(alarmTime.getMinutes() - parseInt(tag.replace('alarm', '')));
-
-        NotificationService.scheduleNotification({
-          eventId: event.id,
-          eventName: event.summary,
-          alarmTime: alarmTime,
-        });
-      }
+      NotificationService.scheduleNotification({
+        eventId: event.id,
+        eventName: event.summary,
+        alarmTime: tag.targetDate,
+      });
     });
   };
 

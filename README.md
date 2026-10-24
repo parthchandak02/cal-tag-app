@@ -43,8 +43,8 @@ worked. The same idea was later rebuilt from scratch, on iOS AlarmKit, as
 ## What does not
 
 - **Notifications.** The last commit wires in OneSignal push and an `alarm.mp3` sound, and is
-  marked "not working, checkpoint only". Scheduling also looks for `alarm3` and `alarm5` as
-  fields on the event object rather than in its description, so no alarm is ever queued.
+  marked "not working, checkpoint only". Tags in the description are now handed to OneSignal
+  for scheduling, but the push setup itself was never verified end to end.
 - **iOS sign-in.** A run of commits tries to fix native Google sign-in on device; it was not
   verified.
 - **Settings tab.** Empty placeholder.
