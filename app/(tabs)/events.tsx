@@ -179,7 +179,7 @@ export default function EventsScreen() {
           <Text>{alarm.eventName}</Text>
           <CountdownTimer
             targetDate={alarm.alarmTime}
-            onComplete={() => handleSnooze(alarm.eventId, alarm.eventName)}
+            onFinish={() => handleSnooze(alarm.eventId, alarm.eventName)}
           />
         </View>
       ))}
